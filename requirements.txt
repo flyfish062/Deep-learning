@@ -1,0 +1,8 @@
+# Deep-Learning 运行依赖
+# micrograd.ipynb 只依赖 Python 标准库(math)，无需安装额外包。
+# gpt.ipynb / transformer_ZeroToDone.ipynb 需要 PyTorch。
+# 有 NVIDIA GPU 时建议安装对应 CUDA 版本：https://pytorch.org/get-started/locally/
+
+torch>=2.0
+jupyter
+ipykernel
