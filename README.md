@@ -1,249 +1,191 @@
 <div align="center">
 
-# 🧠 Deep-Learning · 三大经典,逐模块从零手写
+# 🧠 Deep-Learning
 
-**反向传播引擎 → 字符级 GPT → 原版 Transformer (seq2seq)**
-不依赖任何高层封装，一条学习链路到底；每一行代码都写了"为什么这样设计"的中文注释。
+### 从自动求导到 Transformer 的学习记录
 
-`纯 Python` · `PyTorch` · `From Scratch` · `Autograd` · `Transformer` · `GPT`
+**纯 Python · PyTorch · From Scratch · Autograd · Attention**
 
 </div>
 
 ---
 
-## 📌 仓库简介
+## 📌 项目简介
 
-这是一个**刻意不用现成框架封装、把深度学习核心组件亲手重写一遍**的学习仓库。用三个递进的项目，覆盖了深度学习从"最底层的求导"到"最完整的 Seq2Seq 架构"：
+这是一个准大二本科生的深度学习学习仓库，主要记录我把一些基础组件亲手实现一遍的过程。
 
-| 层级 | 项目 | 你要亲手写出来的东西 |
-|------|------|---------------------|
-| ① 最底层 | `micrograd.ipynb` | 一个微型 **自动求导引擎**（反向传播 / 链式法则） |
-| ② 解码端 | `gpt.ipynb` | 一个约 **10.8M 参数的字符级 GPT**（Decoder-only） |
-| ③ 编解码 | `transformer_ZeroToDone.ipynb` | 原版 **《Attention Is All You Need》Encoder-Decoder** |
+仓库按照由浅入深的顺序包含三个 notebook：
 
-与"调包"式学习最大的不同：**这里没有 `nn.Transformer`，没有现成训练器，所有矩阵流向和梯度规则都是自己写出来的。** 写好之后再回头看任何框架，它们内部在做什么就一目了然。
+1. 用纯 Python 演示标量自动求导；
+2. 用 PyTorch 手写一个字符级 GPT 的主要结构；
+3. 参考 Transformer 论文实现一个简化的 Encoder-Decoder，并用小任务测试。
 
----
+这里的“从零”主要指**没有调用 `nn.Transformer`、`nn.MultiheadAttention` 等完整封装**，而是自己展开注意力、mask、残差和训练流程。GPT 和 Transformer 仍然使用 PyTorch 提供的张量、基础网络层、优化器和自动求导。
 
-## 🗺 内容导览
-
-| 文件 | 一句话定位 | 参考来源 |
-|------|-----------|----------|
-| `micrograd.ipynb` | 用纯 Python 手写反向传播引擎（约 150 行一个 `Value` 类搞定） | [micrograd](https://github.com/karpathy/micrograd) · Andrej Karpathy |
-| `gpt.ipynb` | 从零搭建字符级 GPT 语言模型并训练到能"写"出莎翁体文字 | [Let's build GPT](https://www.youtube.com/watch?v=kCc8FmEb1nY) / [nanoGPT](https://github.com/karpathy/nanoGPT) · Andrej Karpathy |
-| `transformer_ZeroToDone.ipynb` | 复现 2017 原版 Transformer，完整实现 Encoder-Decoder 与训练闭环 | [Attention Is All You Need](https://arxiv.org/abs/1706.03762) 论文 |
-| `input.txt` | GPT 的训练语料（Tiny Shakespeare，约 1.1 MB） | nanoGPT 官方数据 |
-
-> 三个项目的代码都带有**逐行中文注释**，不只写"这行做什么"，更写"为什么这么设计、换一种写法会出什么问题"——本仓库的核心价值也在这里。
+项目目前以学习和理解为主，不是生产级框架，也不是论文级复现。代码保留了较多中文注释，重点说明关键张量形状和设计原因。
 
 ---
 
-## 🧭 学习路径（为什么是这三样）
+## 🗺 项目总览
 
-```mermaid
-flowchart LR
-    A["① micrograd<br/>手写反向传播引擎"] -->|"同一套<br/>链式法则 + 梯度下降"| B["② GPT<br/>Decoder-only<br/>字符级语言模型"]
-    B -->|"同一个<br/>Attention 机制"| C["③ Transformer<br/>Encoder–Decoder<br/>完整 seq2seq"]
+| 文件 | 内容 | 验证方式 |
+|---|---|---|
+| [`micrograd.ipynb`](./micrograd.ipynb) | 标量计算图与自动求导 | 单神经元梯度、一次梯度下降 |
+| [`gpt.ipynb`](./gpt.ipynb) | 字符级 Decoder-only GPT | Tiny Shakespeare 训练与生成 |
+| [`transformer_ZeroToDone.ipynb`](./transformer_ZeroToDone.ipynb) | 简化 Encoder-Decoder Transformer | 数字序列 copy task |
+
+学习路径可以概括为：
+
+```text
+计算图与梯度  →  自注意力与 GPT  →  Encoder-Decoder 与交叉注意力
 ```
 
-1. **先搞懂梯度从哪来** —— `micrograd` 用最少的代码把"反向传播 = 计算图 + 拓扑序 + 链式法则"彻底讲透；
-2. **再看注意力怎么搭建** —— `GPT` 是"只有 Decoder"的最简 Transformer 应用：词表 → 自注意力 → 下一个字符；
-3. **最后补全整个架构** —— `Transformer` 加上 Encoder、Cross-Attention、掩码、标签平滑与学习率调度，凑成完整的 Seq2Seq。
-
-每一步都向下兼容前一步的理解，代码量也逐级放大，是一份完整的"由点到面"学习曲线。
-
 ---
 
-## ⚙️ 运行环境与快速开始
+## ⚙️ 环境与运行
 
-**依赖**：Python 3.8+、PyTorch 2.0+、Jupyter。有 NVIDIA GPU 会自动使用（代码里 `device` 自动选择），没有 GPU 也能在 CPU 上跑通（只是慢些）。
+建议环境：
+
+- Python 3.10+（Notebook 保存时使用 Python 3.10.20）
+- PyTorch 2.0+
+- Jupyter Notebook 或 JupyterLab
+
+安装依赖：
 
 ```bash
-# 1. 安装依赖（有 GPU 建议按官网安装对应 CUDA 版 torch）
 pip install -r requirements.txt
+```
 
-# 2. 方式一：命令行直接跑通并保存运行结果
+启动 Jupyter 后，建议按以下顺序运行：
+
+1. `micrograd.ipynb`：直接运行即可；
+2. `gpt.ipynb`：需要从仓库根目录运行，并保证 `input.txt` 在同一目录；
+3. `transformer_ZeroToDone.ipynb`：运行最后的 copy task。
+
+GPT notebook 会在 CUDA 可用时使用 GPU；Transformer notebook 当前默认使用 CPU。CPU 也可以运行，但训练速度会慢一些。
+
+如果使用命令行执行 notebook：
+
+```bash
 jupyter nbconvert --to notebook --execute --inplace micrograd.ipynb
-jupyter nbconvert --to notebook --execute --inplace gpt.ipynb        # 需与 input.txt 同目录
-
-# 3. 方式二：Jupyter / VS Code 打开 notebook → Run All
+jupyter nbconvert --to notebook --execute --inplace gpt.ipynb
+jupyter nbconvert --to notebook --execute --inplace transformer_ZeroToDone.ipynb
 ```
 
-| Notebook | 可运行性 | 备注 |
-|----------|---------|------|
-| `micrograd.ipynb` | ✅ 任意环境可跑 | **只依赖 Python 标准库**，无需安装 torch |
-| `gpt.ipynb` | ✅ 开箱即跑 | 会自动读取同目录 `input.txt`；GPU/CPU 均可 |
-| `transformer_ZeroToDone.ipynb` | ✅ 开箱即跑 | 自带轻量自测任务，数分钟可跑完 |
-
-想调整模型规模：直接改 notebook 顶部的**全局超参数区**即可。
+> `--inplace` 会覆盖 notebook 中原有的输出。如果想保留当前输出，建议先复制文件再执行。
 
 ---
 
-## ① micrograd —— 用纯 Python 手写反向传播
+## ① micrograd：标量自动求导
 
-> `micrograd.ipynb` · 参考 [Andrej Karpathy 的 micrograd](https://github.com/karpathy/micrograd)
+`micrograd.ipynb` 只使用 Python 标准库中的 `math`，实现了一个简化的 `Value` 类。
 
-### 实现了什么
+每个节点保存自己的数值、梯度、父节点和局部反向传播规则。代码支持：
 
-深度学习三大库（PyTorch / TensorFlow）的自动求导，本质就是这一件事：**把每个运算记进一张计算图，再用链式法则从 loss 一路把梯度传回去。** 本项目只用**标准库**完整复刻了这件事：
+- 加减乘除和幂运算；
+- `relu`、`tanh`；
+- 数字在左侧的反向运算，例如 `2 + a`。
 
-- **`Value` 类**：同时记录数值 `data`、梯度 `grad`、父节点 `_prev` 和运算类型 `_op`，一个对象就是一个计算图节点；
-- **运算符重载**：`+ − × ÷ ** `、`relu`、`tanh`，以及配套的 `__radd__ / __rsub__ / __rmul__ / __rtruediv__`（保证 `2 + a`、`a / 2` 这类"数字在左"的写法也能工作）；
-- **`backward()`**：用 **DFS 拓扑排序**保证"一个节点的梯度算完前，它依赖的所有子节点梯度都先算好"，再倒序执行链式法则。
+`backward()` 会先构造拓扑排序，再从 loss 开始逆序应用链式法则。最后的 demo 用一个简单神经元检查梯度，并手动更新一次参数。
 
-```python
-# 只用了 3 类"零件"——建图、记 backward、拓扑序回放
-a = Value(2.0); b = Value(-3.0)
-c = a * b + 5.0          # 每次运算都自动挂上该运算的 _backward
-loss = c.relu() ** 2
-loss.backward()          # 一键拿到所有参数梯度
-print(a.grad)            # d loss / d a
-```
-
-### 我的额外工作（相对参考实现）
-
-- 补全了 `tanh`、除法与"数字在左"的整套反向算子，并对每个算子的梯度推导写明了注释；
-- 原版附带的"神经网络训练"演示未照搬，而是写了一个**手算对答案的验证 demo**：构造单神经元 → 前向 → 反向 → 用解析梯度核对 → 手动执行一步梯度下降，完整展示"梯度是被正确算出来的"。
+这个 notebook 主要用于理解自动求导的基本机制，不涉及张量、广播或完整的神经网络框架。
 
 ---
 
-## ② GPT —— 从零搭建并训练一个字符级语言模型
+## ② GPT：字符级 Decoder-only Transformer
 
-> `gpt.ipynb` · 参考 Karpathy [Let's build GPT](https://www.youtube.com/watch?v=kCc8FmEb1nY)（Zero to Hero 系列）与 [nanoGPT](https://github.com/karpathy/nanoGPT)
+`gpt.ipynb` 在 Tiny Shakespeare 字符语料上训练一个小型语言模型。主要结构由代码手动组合：
 
-### 实现了什么
+- 字符编码和 batch 采样；
+- 单头因果自注意力与多头注意力；
+- token embedding、位置 embedding；
+- Pre-LN、残差连接和前馈网络；
+- 训练、评估和自回归生成。
 
-不调用任何现成注意力层，**自底向上**手写了一个完整的 Decoder-only Transformer：
+当前配置为 6 层、6 个注意力头、384 维嵌入、256 的上下文长度，约 10.79M 参数，训练 3000 步。
 
-```
-Head(单头因果自注意力)          # key/query/value 线性投影 + 缩放点积 + 因果掩码 + softmax
-   └─ MultiHeadAttention        # n 头并行 + 线性融合(proj) + dropout
-        └─ Block                # Pre-LN + 多头注意力 + 前馈网络 + 残差连接（堆 6 层）
-             └─ GPTLanguageModel  # token/位置双嵌入 → N×Block → LayerNorm → 打分头
-```
-
-配套手写了：字符级分词器（`stoi/itos` 双向词表）、`get_batch` 随机切批、`estimate_loss` 无梯度评估、参数初始化、采样生成 `generate`。
-
-**超参数**（notebook 顶部可改）
-
-| 项 | 值 | 项 | 值 |
-|----|----|----|----|
-| 模型层数 `n_layer` | 6 | 注意力头 `n_head` | 6 |
-| 嵌入维度 `n_embd` | 384 | 上下文 `block_size` | 256 |
-| 参数量 | **≈ 10.79 M** | dropout | 0.2 |
-| 优化器 | AdamW, lr 3e-4 | 训练步数 | 3000 |
-
-**训练曲线**（真实运行输出，train/val 划分 9:1）
+Notebook 中保存过一次运行结果：
 
 | step | train loss | val loss |
-|------|-----------|----------|
+|---:|---:|---:|
 | 0 | 4.2221 | 4.2306 |
 | 1000 | 1.3913 | 1.6010 |
 | 2000 | 1.1891 | 1.5078 |
-| 2999 | **1.0702** | **1.4839** |
+| 2999 | 1.0702 | 1.4839 |
 
-**生成效果**（温度 0.7 + top-k=10 采样，莎士比亚语料微风格）：
-
-> And fit our coate to the moise of his crown.  
-> KING RICHARD II: And happin him! the days not to Rapose,  
-> To defend the foul of summer's heart. …
-
-### 我的额外工作（相对教程原版）
-
-- 在采样端**自主增加了 `temperature` 与 `top-k` 两个可控参数**（原版仅做原始采样）——用注释讲清了它们在"文本连贯性 vs 多样性"上的权衡；
-- 全程补充了大量"为什么"注释：因果掩码如何做到"未来不可见"、`register_buffer` 与可学习参数的区别、Pre-LN 为何能缓解梯度消失、`logits` 为何要拉平成 `B×T` 再算交叉熵、`multinomial` 采样为何比 `argmax` 更有"创造力"。
+生成部分加入了 `temperature` 和 `top-k` 参数。输出只是字符级模型在这份语料上学习到的续写片段，可能有拼写和语法问题；它不是 ChatGPT，也不代表通用的语言理解能力。
 
 ---
 
-## ③ Transformer —— 复现《Attention Is All You Need》
+## ③ Transformer：简化的 Encoder-Decoder
 
-> `transformer_ZeroToDone.ipynb` · 论文 [Attention Is All You Need (Vaswani et al., 2017)](https://arxiv.org/abs/1706.03762)，教学注释参考《动手学深度学习》(李沐) 一脉的讲解
+`transformer_ZeroToDone.ipynb` 参考《Attention Is All You Need》的基本结构，手动实现了：
 
-### 实现了什么
+- 缩放点积注意力和多头注意力；
+- 正弦位置编码；
+- Encoder、Decoder 和交叉注意力；
+- padding mask、因果 mask 和 batch 封装；
+- Pre-LN 残差结构；
+- Label Smoothing、Noam 学习率公式和贪心解码。
 
-**从零逐模块拼出完整 Seq2Seq Transformer**，一个 `nn.Transformer` 都没用：
+这里是一个教学性质的简化实现，采用了 Pre-LN 结构，并不等同于论文原始实现的所有细节。
 
-| 模块 | 说明 |
-|------|------|
-| `MultiHeadAttention` | 多头自/交叉注意力（4 个投影矩阵 + 返回注意力权重便于可视化） |
-| `PositionalEncoding` | 正弦位置编码，`register_buffer` 注册 |
-| `LayerNorm` + `SublayerConnection` | Pre-LN：先归一化再进子层，外层恒等残差 |
-| `EncoderLayer / DecoderLayer` | 自注意力 · 交叉注意力 · 前馈网络 三层堆叠 |
-| `Batch / mask` | padding 掩码 + 因果掩码组合，训练数据错位打包 |
-| `LabelSmoothing` | 标签平滑（KL 散度 + 忽略 pad），缓解模型过度自信 |
-| `Noam scheduler` | 学习率"先热身后衰减"，按模型维度自适应 |
-| `make_model` | 工厂函数一键装配 + Xavier 初始化 |
-| `greedy_decode` | 自回归式贪心解码（推理闭环） |
-
-**数据流向**：
-
-```
-src → Embedding×√d_model → Encoder(N×) ──memory──▶ Decoder(N×) → Linear+LogSoftmax → loss/生成
-                        (Pad mask)        (src_mask)  (Masked Self-Attn + Cross-Attn + FFN)
-                                                        (Pad mask & 因果 mask)
-```
-
-**验证 demo（真实运行结果）**——一个"复述数字"的 copy 任务：模型要在 Encoder-Decoder 下把一串输入原样输出。训练 20 轮后，贪心解码结果与输入**逐位完全一致**，证明"编码 → 记忆 → 自回归解码"的**训练与推理闭环全部正确**：
+最后的 demo 使用随机生成的数字序列进行 copy task：
 
 ```text
-输入 src = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-解码输出 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]   ✅ 完全复述
+输入： [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+输出： [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
 
-### 我的额外工作（相对参考实现）
-
-- 逐层手写并注释了 **`Embeddings × √d_model`**（防止词向量被位置编码淹没）、**LabelSmoothing 用 `reduction="sum"`**（避免 pad 摊薄平均损失）等容易被人忽视的工程细节；
-- 采用 **Pre-LN 残差结构**并说明其相比 Post-LN 训练更稳定的原因；
-- 用最小规模的 copy 任务把"训练 + 评估 + 推理"全链路一次性验证跑通。
+这个结果只说明模型在当前很小的合成任务上完成了训练和贪心解码流程，不代表它能够进行真实机器翻译。当前 demo 中 `smoothing=0.0`，因此没有实际启用标签平滑效果。
 
 ---
 
-## 💡 几个"值得细品"的设计细节
+## 💡 我在学习中重点关注的内容
 
-本仓库注释里散落了很多这类思考，这里挑几条汇总（也是我个人理解最深的部分）：
-
-1. **自动求导为什么能工作**——反向传播 = 计算图 + 拓扑序 + 链式法则；同一变量被多条路径用时梯度要 `+=`（各路之和），而不是 `=`（micrograd）。
-2. **Embedding 为什么要乘 `√d_model`**——词向量数值很小，不放大则相加后被位置编码"淹没"（Transformer）。
-3. **为什么全用 Pre-LN 而不是 Post-LN**——先归一化、再进子层，残差主干道始终是"恒等加法"，深层训练更稳，不易梯度消失/爆炸（GPT 与 Transformer 均如此）。
-4. **因果掩码怎么做到"只见过去"**——下三角布尔掩码 + `masked_fill(-inf)`，softmax 之后未来位置概率归零（GPT）。
-5. **`temperature`/`top-k` 采样的取舍**——压低长尾、抬高头部，让模型在"连贯"与"有创造性"之间可调（GPT，自主改进）。
-6. **标签平滑与 Noam 调度为何配套出现**——一个防"过度自信"，一个按模型维度给合理基准学习率，共同服务于稳定的收敛（Transformer）。
-7. **`register_buffer` vs `Parameter`**——掩码、位置编码"要随模型迁移保存但不可被梯度更新"，所以注册为 buffer 而非参数（两个项目都有体现）。
+- 计算图如何保存运算关系，反向传播为什么要按拓扑序进行；
+- 同一个变量经过多条路径时，梯度为什么需要累加；
+- 因果 mask 如何让语言模型不能看到未来字符；
+- self-attention 和 cross-attention 的区别；
+- 残差连接、LayerNorm 和位置编码分别解决什么问题；
+- 训练阶段和自回归推理阶段的数据流有什么不同。
 
 ---
 
-## 📦 目录结构
+## 📂 目录结构
 
-```
+```text
 Deep-Learning/
-├── README.md                        # 本说明
-├── LICENSE                          # MIT License
-├── requirements.txt                 # 运行依赖
+├── README.md
+├── LICENSE
+├── requirements.txt
 ├── .gitignore
 ├── .gitattributes
-├── input.txt                        # GPT 训练语料（Tiny Shakespeare，~1.1MB）
-├── micrograd.ipynb                  # ① 纯 Python 手写自动求导引擎
-├── gpt.ipynb                        # ② 字符级 GPT（~10.8M 参数）
-└── transformer_ZeroToDone.ipynb     # ③ 原版 Transformer（Encoder-Decoder）
+├── input.txt
+├── micrograd.ipynb
+├── gpt.ipynb
+└── transformer_ZeroToDone.ipynb
 ```
 
 ---
 
-## 📚 参考与致谢
+## 📚 参考资料
 
-本项目为个人学习复现，代码与下述 MIT 开源教程/论文同源，感谢开源社区：
+- [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+- Andrej Karpathy 的 [micrograd](https://github.com/karpathy/micrograd)
+- Andrej Karpathy 的 [Let's build GPT](https://www.youtube.com/watch?v=kCc8FmEb1nY)
+- [nanoGPT](https://github.com/karpathy/nanoGPT)
+- 李沐等，[动手学深度学习](https://zh.d2l.ai/)
+- [The Annotated Transformer](https://nlp.seas.harvard.edu/annotated-transformer/)
 
-- **论文**：《[Attention Is All You Need](https://arxiv.org/abs/1706.03762)》, Vaswani et al., 2017
-- **Andrej Karpathy**：[micrograd](https://github.com/karpathy/micrograd) · [Let's build GPT（Zero to Hero 视频）](https://www.youtube.com/watch?v=kCc8FmEb1nY) · [nanoGPT（含 Tiny Shakespeare 语料）](https://github.com/karpathy/nanoGPT)
-- **《动手学深度学习》**（李沐等）：[d2l-zh](https://zh.d2l.ai/)
-- **The Annotated Transformer**（Harvard NLP）：[nlp.seas.harvard.edu/annotated-transformer](https://nlp.seas.harvard.edu/annotated-transformer/)
+感谢这些论文、教程和开源项目提供的学习材料。本仓库的实现主要用于学习和整理。
 
 ---
 
 ## 📄 License
 
-[MIT](./LICENSE) © 2026
+本项目使用 [MIT License](./LICENSE)。
 
 ---
 
-*从"梯度怎么算"一路手写到"机器怎么翻译"，这个仓库记录了我对深度学习从入门到入微的过程。欢迎 Star / Issue 交流。*
+*从梯度、注意力到 Encoder-Decoder，这个仓库记录了我目前对深度学习基础组件的学习过程。*
